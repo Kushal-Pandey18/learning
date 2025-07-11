@@ -5,31 +5,42 @@
 #include <algorithm>
 using namespace std;
 
-unordered_map<string, vector<string>> dependencies;
-unordered_map<string, int> memo;
-
-int calculateSteps(const string& potion) {
-    // If already calculated, return memoized result
-    if (memo.find(potion) != memo.end()) {
-        return memo[potion];
+class PotionSynthesizer {
+private:
+    unordered_map<string, vector<string>> graph; // Dependency graph: potion -> ingredients
+    unordered_map<string, int> memo; // Memoization for calculated steps
+    
+public:
+    // DFS with memoization to calculate minimum synthesis steps
+    int calculateSteps(const string& potion) {
+        // If already calculated, return memoized result
+        if (memo.count(potion)) {
+            return memo[potion];
+        }
+        
+        // If potion has no dependencies, it's a basic ingredient (0 steps)
+        if (graph[potion].empty()) {
+            return memo[potion] = 0;
+        }
+        
+        // Calculate maximum steps among all ingredients
+        int maxSteps = 0;
+        for (const string& ingredient : graph[potion]) {
+            maxSteps = max(maxSteps, calculateSteps(ingredient));
+        }
+        
+        // This potion takes max(ingredient steps) + 1
+        return memo[potion] = maxSteps + 1;
     }
     
-    // If potion has no dependencies, it's a basic ingredient (0 steps)
-    if (dependencies[potion].empty()) {
-        memo[potion] = 0;
-        return 0;
+    void addPotion(const string& name, const vector<string>& ingredients) {
+        graph[name] = ingredients;
     }
     
-    // Calculate maximum steps among all ingredients
-    int maxSteps = 0;
-    for (const string& ingredient : dependencies[potion]) {
-        maxSteps = max(maxSteps, calculateSteps(ingredient));
+    int solve(const string& target) {
+        return calculateSteps(target);
     }
-    
-    // This potion takes max(ingredient steps) + 1
-    memo[potion] = maxSteps + 1;
-    return memo[potion];
-}
+};
 
 int main() {
     ios_base::sync_with_stdio(false);
@@ -38,7 +49,9 @@ int main() {
     int n;
     cin >> n;
     
-    // Read potion definitions
+    PotionSynthesizer synthesizer;
+    
+    // Build the dependency graph
     for (int i = 0; i < n; i++) {
         string potionName;
         int k;
@@ -49,15 +62,14 @@ int main() {
             cin >> ingredients[j];
         }
         
-        dependencies[potionName] = ingredients;
+        synthesizer.addPotion(potionName, ingredients);
     }
     
-    // Read target potion
+    // Read target potion and solve
     string target;
     cin >> target;
     
-    // Calculate and output the minimum steps
-    cout << calculateSteps(target) << endl;
+    cout << synthesizer.solve(target) << endl;
     
     return 0;
 }
